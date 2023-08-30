@@ -5,7 +5,7 @@ import numpy as np
 from explain.exs import ExplainableSearch 
 import matplotlib.pyplot as plt
 import os
-
+from app import app
 
 # Initialize the searcher and reranker
 searcher = SimpleSearcher.from_prebuilt_index('msmarco-passage')
@@ -54,7 +54,7 @@ def generate_response_cross(user_message):
     r = 0 
     doc_ids = np.array([hits[i].docid for i in range(10)])
     docids_reranked = doc_ids[np.argsort(rerank_scores)[::-1]]
-    doc_id = docids_reranked[0]  # Selecting the top-ranked document
+    doc_id = docids_reranked[r]  # Selecting the top-ranked document
     json_data_list = np.array([json.loads(hits[i].raw) for i in range(10)])
     doc_exp = ''
     for jsondoc in json_data_list:
