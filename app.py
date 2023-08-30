@@ -9,7 +9,9 @@ import os
 import time
 
 app = Flask(__name__)
-app.static_folder = 'static'
+# app.static_folder = 'static'
+app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
 
 
 # Initialize the searcher and reranker
@@ -53,7 +55,7 @@ def visualize(vocabs:np.array, coef: np.array, show_top: int=10, save_path: str 
         plt.close()
         return image_path
 
-def generate_response(user_message):
+def generate_response_cross(user_message):
     query = user_message
     hits = searcher.search(user_message)
     
@@ -87,6 +89,7 @@ def generate_response(user_message):
     image_path = visualize(results[query][0], results[query][1], save_path=os.path.join(app.static_folder, 'images'))
 
 
+
         # Construct and return the response with the image path
     response = {
         'top_document': doc_exp,
@@ -103,31 +106,20 @@ def generate_response(user_message):
 def home():
     return render_template('index.html')
 
+@app.route('/process', methods=['POST'])
+def process_data():
+    data = request.get_json()  # Parse the incoming JSON data
+    user_query = data.get('message')
+    selected_model = data.get('model')
+    if selected_model == 'Cross Encoder':
+        response_data = generate_response_cross(user_query)
+    # else:
+    #     response_data = generate_response_mono(user_query)
+        
 
-@app.route('/process', methods=['GET'])
-def process_message():
-    user_message = request.args.get('message')
-    # print(user_message)
-    response = generate_response(user_message)
-    print(response)
-    return jsonify(response)
-
-
-
-# @app.route('/process', methods=['POST'])
-# def process_message():
-#     # Get the user's message from the JSON data
-#     data = request.json
-#     user_message = data.get('message')
-#     print(user_message)
-
-#     # # Process the user's message and generate a response (you need to implement this logic)
-#     # bot_response = get_bot_response(user_message)  # Replace with your actual bot logic
-
-#     # # Return the bot's response in JSON format
-#     # return jsonify(bot_response)
-
+    return jsonify(response_data)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
+
 

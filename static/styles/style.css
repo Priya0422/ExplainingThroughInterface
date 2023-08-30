@@ -71,7 +71,7 @@
     align-items: flex-end;
     margin-bottom: 10px;
   }
-  
+/*   
   .msg-img {
     width: 50px;
     height: 50px;
@@ -81,7 +81,7 @@
     background-position: center;
     background-size: cover;
     border-radius: 50%;
-  }
+  } */
   .msg-bubble {
     max-width: 450px;
     padding: 15px;
@@ -146,7 +146,34 @@
     background: rgb(0, 180, 50);
   }
   .msger-chat {
-    background-image: url("BG.jpg");
+    /* background-image: url("BG.jpg"); */
     background-repeat: no-repeat;
     background-size: cover;
   }
+
+  .msg-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.cross-button, .mono-button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.cross-button {
+    background-color: #2196F3; /* Red color for the Cross Encoder button */
+}
+
+.mono-button {
+    background-color: #2196F3; /* Blue color for the Mono-T5 button */
+}
