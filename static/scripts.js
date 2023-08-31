@@ -6,11 +6,12 @@
   const BOT_NAME = "chatbot";
   const PERSON_NAME = "You";
 
-    // Define a variable to store the selected model
-    let selectedModel = null;
+  // Define a variable to store the selected model
+  let selectedModel = null;
+  let savedResponse = null; 
 
-    // Function to get the selected model
-    function getSelectedModel() {
+  // Function to get the selected model
+  function getSelectedModel() {
     return selectedModel;
     }   
 
@@ -21,6 +22,7 @@
     const chatBubble = document.querySelector('.msg-text');
     const chatMain = document.querySelector('.msger-chat');
 
+    //cross Encoder button
     crossButton.addEventListener('click', function() {
         selectedModel = "Cross Encoder";
         monoButton.disabled = true;
@@ -74,6 +76,7 @@
         }, 1500); // Simulate a delay of 1.5 seconds
     });
 
+    //mono T5 button
     monoButton.addEventListener('click', function() {
         selectedModel = "Mono-T5";
         crossButton.disabled = true;
@@ -125,10 +128,9 @@
             chatMain.appendChild(startMessage);
         }, 1500); // Simulate a delay of 1.5 seconds
     });
-
-
-
-msgerForm.addEventListener("submit", event => {
+    
+    //Send button
+    msgerForm.addEventListener("submit", event => {
     event.preventDefault();
 
     const msgText = msgerInput.value;
@@ -161,20 +163,29 @@ function botResponse(rawText) {
 
     // Send AJAX request to Flask endpoint for processing
     $.ajax({
-        url: "/process", // Use the appropriate endpoint URL
-        type: "POST",   // Use POST method for sending data
+        url: "/process", 
+        type: "POST",   
         contentType: "application/json",
         data: JSON.stringify({ message: rawText, model: selectedModel }), // Send message and model as JSON
         success: function(response) {
+            savedResponse = response;
             // Display bot's response in the chat
             appendMessage(BOT_NAME, "left", response.top_document);
             appendImage(response.explanation_image_path);
-            const rerankedLinks = response.reranked_doc_ids.map(docId => {
-                return `<a href="#" onclick="getExplanation(${docId})">${docId}</a>`;
-            });
-
-            const rerankedLinksHtml = rerankedLinks.join(" , "); // Separate links by line break
-            appendMessage(BOT_NAME, "left", "If you need explanation for specific document - click the document Id: <br>" + rerankedLinksHtml);
+            // const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
+            //     const responseJsonStr = JSON.stringify(response); 
+            //     console.log("responseJsonStr", responseJsonStr);
+            // return `<a href="#">rank ${index} = ${docId}</a>`;
+            // }).join(", ");      
+            // const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
+            //     return `<a href="#" class="document-link" data-doc-id="${docId}" data-response-json='${JSON.stringify(response)}'>rank ${index} = ${docId}</a>`;
+            // }).join(", ");   
+            // Generating anchor links
+            const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => `
+            <a href="#" class="document-link" data-doc-id="${docId}" data-rank="${index}" data-response-json="${encodeURIComponent(JSON.stringify(response))}">rank ${index} = ${docId}</a>
+            `).join(", ");
+ 
+            appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br><br>" + rerankedLinksHtml);
         },
         error: function(error) {
             console.error("Error sending message to Flask:", error);
@@ -204,6 +215,103 @@ function appendImage(imagePath) {
     chatContainer.appendChild(imageDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
+
+document.addEventListener('click', function(event) {
+    const target = event.target;
+
+    // Check if the clicked element is an anchor element with the class 'document-link'
+    if (target.tagName === 'A' && target.classList.contains('document-link')) {
+        event.preventDefault();
+        const docId = target.getAttribute('data-doc-id');
+        const rank = target.getAttribute('data-rank');
+        const responseJsonStr = target.getAttribute('data-response-json');
+        showDocumentExplanation(docId, responseJsonStr, rank);
+    }
+});
+
+function showDocumentExplanation(docId, responseJsonStr, rank) {
+    appendMessage(PERSON_NAME, "right", docId);
+    const responseJsonEncoded = decodeURIComponent(responseJsonStr);
+    const response = JSON.parse(responseJsonEncoded);
+    const requestData = {
+              rank: rank,
+              doc_id: docId,
+              doc_ids: response.doc_ids,
+              jsondoc: response.jsondoc,
+              rerank_scores: response.rerank_scores,
+              reranked_doc_ids: response.reranked_doc_ids,
+              query: response.query,
+          };
+          
+          // Make a POST request to the backend using jQuery
+          $.ajax({
+              type: "POST",
+              url: "/get_explanation",  // Replace with your Flask route
+              data: JSON.stringify(requestData),
+              contentType: "application/json",
+              success: function(response) {
+                  // Handle the response from the backend as needed
+                  // console.log("Explanation received:", response);
+                  appendImage(response.explanation_image_path);
+                  // Generating anchor links
+                  const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => `
+                  <a href="#" class="document-link" data-doc-id="${docId}" data-rank="${index}" data-response-json="${encodeURIComponent(JSON.stringify(response))}">rank ${index} = ${docId}</a>
+                  `).join(", ");
+       
+                
+                appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br>" + rerankedLinksHtml);
+                  // Do something with the explanation data
+              },
+              error: function(error) {
+                  console.error("Error getting explanation from Flask:", error);
+              }
+             });
+            
+    }
+
+// function getExplanation(index,responseJsonStr) {
+//     const response = JSON.parse(responseJsonStr);
+//     // Get the response JSON from the Flask endpoint
+//     console.log("response", responseJsonStr);
+//   if (response && response.reranked_doc_ids && index >= 0 && index < response.reranked_doc_ids.length) {
+//     const docId = response.reranked_doc_ids[index];
+//     console.log("Getting explanation for document ID:", docId); 
+//   // Construct the request data
+//   const requestData = {
+//       rank: index,
+//       doc_id: docId,
+//       doc_ids: response.doc_ids,
+//       jsondoc: response.jsondoc,
+//       rerank_scores: response.rerank_scores,
+//       reranked_doc_ids: response.reranked_doc_ids,
+//       query: response.query,
+//   };
+
+//   // Make a POST request to the backend using jQuery
+//   $.ajax({
+//       type: "POST",
+//       url: "/get_explanation",  // Replace with your Flask route
+//       data: JSON.stringify(requestData),
+//       contentType: "application/json",
+//       success: function(response) {
+//           // Handle the response from the backend as needed
+//           // console.log("Explanation received:", response);
+//           appendImage(response.explanation_image_path);
+//           const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
+//             return `<a href="#" onclick="getExplanation(${index}, ${JSON.stringify(response)})">rank ${index} = ${docId}</a>`;
+//         }).join(", ");          
+        
+//         appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br>" + rerankedLinksHtml);
+//           // Do something with the explanation data
+//       },
+//       error: function(error) {
+//           console.error("Error getting explanation from Flask:", error);
+//       }
+//      });
+//     } else {
+//     console.error("Invalid response data or index:", response, index);
+//     }
+// }
 
    
 

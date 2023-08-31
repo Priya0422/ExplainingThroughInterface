@@ -24,5 +24,14 @@ def process_data():
 
     return jsonify(response_data)
 
+@app.route('/get_explanation', methods=['post'])
+def get_explanation():
+    data = request.get_json()
+    print(data)
+    from explain.crossencoder import generate_specific_explanation
+    response = generate_specific_explanation(data)
+
+    return jsonify(response)
+
 if __name__ == '__main__':
     app.run(debug=True)

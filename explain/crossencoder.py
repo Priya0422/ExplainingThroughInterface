@@ -79,7 +79,47 @@ def generate_response_cross(user_message):
         'reranked_doc_ids': docids_reranked.tolist(), 
         'jsondoc': json_data_list.tolist(),
         'doc_ids': doc_ids.tolist(), 
-        'rerank_scores': rerank_scores.tolist() 
+        'rerank_scores': rerank_scores.tolist() ,
+        'query': query
     }
     return response
     
+def generate_specific_explanation(data):
+    query = data.get('query')
+    print(query)
+    doc_ids = np.array(data.get('doc_ids'))
+    rerank_scores = np.array(data.get('rerank_scores'))
+    docids_reranked = data.get('reranked_doc_ids')
+    r = int(data.get('rank'))
+    doc_id = data.get('doc_id')
+    json_data_list = np.array(data.get('jsondoc'))
+    doc_exp = ''
+    for jsondoc in json_data_list:
+        if 'id' in jsondoc and jsondoc['id'] == doc_id:
+            doc_exp = jsondoc.get('contents', '')
+            break
+    print(doc_exp)  
+    EXS = ExplainableSearch(reranker, 'svm')
+    exp_input = {}
+    exp_input = {query: dict([(a, b) for a, b in zip(doc_ids, rerank_scores)])}
+    for key, value in exp_input[query].items():
+        print(key, value, '\n')
+    exp_doc = {query: {'rank': r,'text':doc_exp}}
+    results = EXS.explain(exp_input, exp_doc , r+1 , 'topk-bin')
+     
+    
+    image_path = visualize(results[query][0], results[query][1], save_path=os.path.join(app.static_folder, 'images'))
+             
+    response = {
+        
+        'explanation_image_path': image_path,
+        'reranked_doc_ids': docids_reranked,
+        'jsondoc': json_data_list.tolist(),
+        'doc_ids': doc_ids.tolist(), 
+        'rerank_scores': rerank_scores.tolist() ,
+        'query': query 
+    }
+    return response
+
+         
+         
