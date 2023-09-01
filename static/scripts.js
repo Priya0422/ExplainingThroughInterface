@@ -87,7 +87,7 @@
         const loadingBubble = document.createElement('div');
         loadingBubble.classList.add('msg', 'right-msg');
         loadingBubble.innerHTML = `
-            <div class="msg-img"></div>
+            <div class="msg-img" style="background-image: url('/static/styles/User.png');"></div>
             <div class="msg-bubble">
                 <div class="msg-text">Loading...</div>
             </div>
