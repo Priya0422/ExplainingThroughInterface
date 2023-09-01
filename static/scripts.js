@@ -3,8 +3,11 @@
   const msgerInput = document.querySelector(".msger-input");
   const msgerChat = document.querySelector(".msger-chat");
 
-  const BOT_NAME = "chatbot";
+  const BOT_NAME = "Chatbot";
   const PERSON_NAME = "You";
+
+  const BOT_IMG = "/static/styles/Bot.png";
+  const PERSON_IMG = "/static/styles/User.png";
 
   // Define a variable to store the selected model
   let selectedModel = null;
@@ -27,6 +30,7 @@
         selectedModel = "Cross Encoder";
         monoButton.disabled = true;
         crossButton.disabled = true;
+
         // Show loading bubble
         const loadingBubble = document.createElement('div');
         loadingBubble.classList.add('msg', 'right-msg');
@@ -39,18 +43,18 @@
         chatMain.appendChild(loadingBubble);
 
 
-        // Simulate a delay before showing the model selection
+        
         setTimeout(function() {
-            // Remove the loading bubble
             chatMain.removeChild(loadingBubble);
 
             // Display the selected model
             const modelBubble = document.createElement('div');
             modelBubble.classList.add('msg', 'right-msg');
             modelBubble.innerHTML = `
-                <div class="msg-img"></div>
+                <div class="msg-img" style="background-image: url('/static/styles/User.png');"></div>
                 <div class="msg-bubble">
-                    <div class="msg-text">Cross Encoder</div>
+                    <div class="msg-info-name" >You</div> <br>
+                    <div class="msg-text" >Cross Encoder</div>
                 </div>
             `;
             chatMain.appendChild(modelBubble);
@@ -61,11 +65,8 @@
             startMessage.innerHTML = `
                 <div class="msg-img"></div>
                 <div class="msg-bubble">
-                    <div class="msg-info">
-                        <div class="msg-info-name">chatbot</div>
-                    </div>
+                    <div class="msg-info-name" >Chatbot</div> <br>
                     <div class="msg-text">
-                    
                         selected model trained with MSMarco Passage Ranking dataset. 
                         <br><br>
                         Let's get started!
@@ -73,7 +74,7 @@
                 </div>
             `;
             chatMain.appendChild(startMessage);
-        }, 1500); // Simulate a delay of 1.5 seconds
+        }, 1500);
     });
 
     //mono T5 button
@@ -81,6 +82,7 @@
         selectedModel = "Mono-T5";
         crossButton.disabled = true;
         monoButton.disabled = true;
+
         // Show loading bubble
         const loadingBubble = document.createElement('div');
         loadingBubble.classList.add('msg', 'right-msg');
@@ -93,9 +95,8 @@
         chatMain.appendChild(loadingBubble);
 
 
-        // Simulate a delay before showing the model selection
+       
         setTimeout(function() {
-            // Remove the loading bubble
             chatMain.removeChild(loadingBubble);
 
             // Display the selected model
@@ -104,6 +105,7 @@
             modelBubble.innerHTML = `
                 <div class="msg-img"></div>
                 <div class="msg-bubble">
+                    <div class="msg-info-name">You</div> <br>
                     <div class="msg-text">Mono-T5</div>
                 </div>
             `;
@@ -116,7 +118,7 @@
                 <div class="msg-img"></div>
                 <div class="msg-bubble">
                     <div class="msg-info">
-                        <div class="msg-info-name">chatbot</div>
+                        <div class="msg-info-name">Chatbot</div>
                     </div>
                     <div class="msg-text">
                         selected model trained with MSMarco Passage Ranking dataset. 
@@ -126,7 +128,7 @@
                 </div>
             `;
             chatMain.appendChild(startMessage);
-        }, 1500); // Simulate a delay of 1.5 seconds
+        }, 1500); 
     });
     
     //Send button
@@ -135,31 +137,59 @@
 
     const msgText = msgerInput.value;
     if (!msgText) return;
-    appendMessage(PERSON_NAME, "right", msgText);
+    appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
     msgerInput.value = "";
+
+    // Show loading bubble
+    showLoadingBubble();
 
     // Send user message to the bot for response
     botResponse(msgText);
 });
 
-function appendMessage(name, side, text) {
-    const msgHTML = `
-        <div class="msg ${side}-msg">
-            <div class="msg-bubble">
-                <div class="msg-info">
-                    <div class="msg-info-name">${name}</div>
-                </div>
-                <div class="msg-text">${text}</div>
-            </div>
+function showLoadingBubble() {
+
+    // Create and append the loading bubble on the left side
+    const loadingBubble = document.createElement('div');
+    loadingBubble.classList.add('msg', 'left-msg', 'loading'); 
+    loadingBubble.innerHTML = `
+        <div class="msg-img"></div>
+        <div class="msg-bubble">
+            <div class="msg-text">Loading...</div>
         </div>
     `;
+    msgerChat.appendChild(loadingBubble);
+}
+
+function hideLoadingBubble() {
+
+    // Remove the loading bubble
+    const loadingBubble = document.querySelector('.left-msg.loading');
+    if (loadingBubble) {
+        loadingBubble.remove();
+    }
+}
+
+function appendMessage(name, img, side, text) {
+    const msgHTML = `
+    <div class="msg ${side}-msg">
+    <div class="msg-img" style="background-image: url(${img})"></div>
+    <div class="msg-bubble">
+      <div class="msg-info">
+        <div class="msg-info-name">${name}</div>
+      </div>
+      <div class="msg-text">${text}</div>
+    </div>
+  </div>
+  `;
     msgerChat.insertAdjacentHTML("beforeend", msgHTML);
     msgerChat.scrollTop += 500;
 }
 
 function botResponse(rawText) {
+
     // Get the selected model
-    const selectedModel = getSelectedModel(); // Replace this with the actual function to get the selected model
+    const selectedModel = getSelectedModel(); 
 
     // Send AJAX request to Flask endpoint for processing
     $.ajax({
@@ -169,23 +199,16 @@ function botResponse(rawText) {
         data: JSON.stringify({ message: rawText, model: selectedModel }), // Send message and model as JSON
         success: function(response) {
             savedResponse = response;
+            
             // Display bot's response in the chat
-            appendMessage(BOT_NAME, "left", response.top_document);
+            appendMessage(BOT_NAME, BOT_IMG, "left", response.top_document);
             appendImage(response.explanation_image_path);
-            // const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
-            //     const responseJsonStr = JSON.stringify(response); 
-            //     console.log("responseJsonStr", responseJsonStr);
-            // return `<a href="#">rank ${index} = ${docId}</a>`;
-            // }).join(", ");      
-            // const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
-            //     return `<a href="#" class="document-link" data-doc-id="${docId}" data-response-json='${JSON.stringify(response)}'>rank ${index} = ${docId}</a>`;
-            // }).join(", ");   
-            // Generating anchor links
             const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => `
             <a href="#" class="document-link" data-doc-id="${docId}" data-rank="${index}" data-response-json="${encodeURIComponent(JSON.stringify(response))}">rank ${index} = ${docId}</a>
             `).join(", ");
- 
-            appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br><br>" + rerankedLinksHtml);
+            appendMessage(BOT_NAME, BOT_IMG,"left", "If you need an explanation for specific documents, click the document IDs:<br><br>" + rerankedLinksHtml);
+            
+            hideLoadingBubble();
         },
         error: function(error) {
             console.error("Error sending message to Flask:", error);
@@ -218,7 +241,6 @@ function appendImage(imagePath) {
 
 document.addEventListener('click', function(event) {
     const target = event.target;
-
     // Check if the clicked element is an anchor element with the class 'document-link'
     if (target.tagName === 'A' && target.classList.contains('document-link')) {
         event.preventDefault();
@@ -230,7 +252,7 @@ document.addEventListener('click', function(event) {
 });
 
 function showDocumentExplanation(docId, responseJsonStr, rank) {
-    appendMessage(PERSON_NAME, "right", docId);
+    appendMessage(PERSON_NAME,PERSON_IMG, "right", docId);
     const responseJsonEncoded = decodeURIComponent(responseJsonStr);
     const response = JSON.parse(responseJsonEncoded);
     const requestData = {
@@ -242,78 +264,25 @@ function showDocumentExplanation(docId, responseJsonStr, rank) {
               reranked_doc_ids: response.reranked_doc_ids,
               query: response.query,
           };
-          
           // Make a POST request to the backend using jQuery
           $.ajax({
               type: "POST",
-              url: "/get_explanation",  // Replace with your Flask route
+              url: "/get_explanation", 
               data: JSON.stringify(requestData),
               contentType: "application/json",
               success: function(response) {
-                  // Handle the response from the backend as needed
-                  // console.log("Explanation received:", response);
                   appendImage(response.explanation_image_path);
-                  // Generating anchor links
                   const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => `
                   <a href="#" class="document-link" data-doc-id="${docId}" data-rank="${index}" data-response-json="${encodeURIComponent(JSON.stringify(response))}">rank ${index} = ${docId}</a>
                   `).join(", ");
-       
-                
-                appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br>" + rerankedLinksHtml);
-                  // Do something with the explanation data
+                appendMessage(BOT_NAME, BOT_IMG , "left", "If you need an explanation for specific documents, click the document IDs:<br>" + rerankedLinksHtml);
               },
               error: function(error) {
                   console.error("Error getting explanation from Flask:", error);
               }
              });
             
-    }
-
-// function getExplanation(index,responseJsonStr) {
-//     const response = JSON.parse(responseJsonStr);
-//     // Get the response JSON from the Flask endpoint
-//     console.log("response", responseJsonStr);
-//   if (response && response.reranked_doc_ids && index >= 0 && index < response.reranked_doc_ids.length) {
-//     const docId = response.reranked_doc_ids[index];
-//     console.log("Getting explanation for document ID:", docId); 
-//   // Construct the request data
-//   const requestData = {
-//       rank: index,
-//       doc_id: docId,
-//       doc_ids: response.doc_ids,
-//       jsondoc: response.jsondoc,
-//       rerank_scores: response.rerank_scores,
-//       reranked_doc_ids: response.reranked_doc_ids,
-//       query: response.query,
-//   };
-
-//   // Make a POST request to the backend using jQuery
-//   $.ajax({
-//       type: "POST",
-//       url: "/get_explanation",  // Replace with your Flask route
-//       data: JSON.stringify(requestData),
-//       contentType: "application/json",
-//       success: function(response) {
-//           // Handle the response from the backend as needed
-//           // console.log("Explanation received:", response);
-//           appendImage(response.explanation_image_path);
-//           const rerankedLinksHtml = response.reranked_doc_ids.map((docId, index) => {
-//             return `<a href="#" onclick="getExplanation(${index}, ${JSON.stringify(response)})">rank ${index} = ${docId}</a>`;
-//         }).join(", ");          
-        
-//         appendMessage(BOT_NAME, "left", "If you need an explanation for specific documents, click the document IDs:<br>" + rerankedLinksHtml);
-//           // Do something with the explanation data
-//       },
-//       error: function(error) {
-//           console.error("Error getting explanation from Flask:", error);
-//       }
-//      });
-//     } else {
-//     console.error("Invalid response data or index:", response, index);
-//     }
-// }
-
-   
+    }   
 
 });
 
