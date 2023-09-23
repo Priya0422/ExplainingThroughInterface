@@ -111,7 +111,7 @@ def generate_specific_explanation(data):
     image_path = visualize(results[query][0], results[query][1], save_path=os.path.join(app.static_folder, 'images'))
              
     response = {
-        
+         'top_document': doc_exp,
         'explanation_image_path': image_path,
         'reranked_doc_ids': docids_reranked,
         'jsondoc': json_data_list.tolist(),
